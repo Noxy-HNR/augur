@@ -116,8 +116,18 @@ def load_json(path):
         try:
             jsonToValidate = json.load(fh)
         except json.JSONDecodeError:
-            raise ValidateError("Supplied JSON to validate ({}) is not a valid JSON".format(path))
+            raise ValidateError(f"Supplied JSON to validate ({path}) is not a valid JSON")
     return jsonToValidate
+
+
+def load_yaml(path):
+    with open_file(path, 'r', encoding='utf-8') as fh:
+        try:
+            yamlToValidate = YAML(typ="safe").load(fh)
+        except YAMLError:
+            raise ValidateError(f"Supplied YAML to validate ({path}) is not valid YAML")
+    return yamlToValidate
+
 
 def validate_json(jsonToValidate, schema, filename):
     # See <https://python-jsonschema.readthedocs.io/en/v3.2.0/errors/> and
@@ -262,11 +272,14 @@ def grouped(iterable, key):
 validate = validate_json  # TODO update uses and drop this alias
 
 
-def auspice_config_v2(config_json: Union[str,dict], **kwargs):
+def auspice_config_v2(config_json: Union[str,dict], is_yaml: bool = False, **kwargs):
     schema = load_json_schema("schema-auspice-config-v2.json")
     if isinstance(config_json, dict):
         config = config_json
         filename = "merged config"
+    elif is_yaml:
+        config = load_yaml(config_json)
+        filename = config_json
     else:
         config = load_json(config_json)
         filename = config_json
